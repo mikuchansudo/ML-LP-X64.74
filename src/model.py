@@ -5,11 +5,13 @@ from .utils import encode_input, COLORS, SIZES, NUMBERS
 
 class LotteryPredictor:
     def __init__(self):
-        self.model = self._build_model()
+        # Define class attributes first
+        self.sequence_length = 10
         self.confidence_scores = {'number': 0, 'size': 0, 'color': 0}
         self.overall_accuracy = 0
-        self.sequence_length = 10
-
+        # Build model after attributes are defined
+        self.model = self._build_model()
+    
     def _build_model(self):
         input_dim = 15
         
@@ -71,12 +73,15 @@ class LotteryPredictor:
         self.overall_accuracy = np.mean(list(self.confidence_scores.values()))
 
     def predict_next(self, recent_data):
+        if len(recent_data) < self.sequence_length:
+            raise ValueError(f"Need at least {self.sequence_length} data points for prediction")
+            
         encoded_sequence = np.array([
-            [encode_input(row['number'], row['size'], row['color'])]
+            encode_input(row['number'], row['size'], row['color'])
             for row in recent_data[-self.sequence_length:]
         ])
         
-        prediction = self.model.predict(encoded_sequence.reshape(1, -1, 15))[0]
+        prediction = self.model.predict(encoded_sequence.reshape(1, self.sequence_length, 15))[0]
         
         number = np.argmax(prediction[:10])
         size = SIZES[np.argmax(prediction[10:12])]
